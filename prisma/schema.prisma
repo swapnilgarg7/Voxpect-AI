@@ -1,0 +1,50 @@
+// Prisma schema for the Agentic Voice Sales SDR platform.
+// Using PostgreSQL as the primary data store.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  // DATABASE_URL → Supabase Transaction Pooler (port 6543) — used by PrismaClient at runtime.
+  // Next.js serverless functions are stateless so we must go through pgBouncer.
+  url       = env("DATABASE_URL")
+  // DIRECT_URL → direct connection (port 5432) — used only by `prisma migrate`.
+  // Migrations require a persistent connection that pgBouncer's transaction mode can't provide.
+  directUrl = env("DIRECT_URL")
+}
+
+// A Lead represents a unique prospect identified by phone number.
+// Phone number is the natural key because VAPI delivers calls keyed by caller/callee number.
+model Lead {
+  id          String   @id @default(cuid())
+  phoneNumber String   @unique
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  calls Call[]
+
+  @@map("leads")
+}
+
+// A Call record is created for every completed VAPI call.
+// vapiCallId is unique — VAPI guarantees one webhook per call completion.
+model Call {
+  id           String    @id @default(cuid())
+  vapiCallId   String    @unique
+  leadId       String
+  transcript   String?   // null if VAPI did not produce a transcript
+  duration     Int?      // seconds; null if call was never connected
+  recordingUrl String?
+  status       String    // maps to VAPI CallStatus enum values
+  startedAt    DateTime?
+  endedAt      DateTime?
+  createdAt    DateTime  @default(now())
+
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([leadId])
+  @@index([vapiCallId])
+  @@map("calls")
+}
