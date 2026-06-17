@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { BarChart3, Users, Phone, Zap, Plus } from "lucide-react";
+import { BarChart3, Users, Phone, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
@@ -16,10 +17,8 @@ export function Sidebar() {
   return (
     <aside className="fixed inset-y-0 left-0 z-40 flex w-56 flex-col border-r border-white/10 bg-zinc-950">
       <div className="flex h-14 items-center gap-2 border-b border-white/10 px-4">
-        <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-600">
-          <Zap className="h-4 w-4 text-white" />
-        </div>
-        <span className="text-sm font-semibold text-white">Voice SDR</span>
+        <Image src="/logo.png" alt="Voxpect AI" width={28} height={28} className="rounded-lg" />
+        <span className="text-sm font-semibold text-white">Voxpect AI</span>
       </div>
 
       <nav className="flex-1 space-y-0.5 p-3">
@@ -53,7 +52,7 @@ export function Sidebar() {
         </Link>
         <div className="flex items-center gap-2 rounded-lg px-3 py-2">
           <Phone className="h-4 w-4 text-zinc-500" />
-          <span className="text-xs text-zinc-500">AI SDR CRM</span>
+          <span className="text-xs text-zinc-500">Voxpect AI CRM</span>
         </div>
       </div>
     </aside>
