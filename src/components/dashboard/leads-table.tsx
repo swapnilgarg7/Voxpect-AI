@@ -101,7 +101,7 @@ export function LeadsTable() {
           <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-zinc-500" />
           <Input
             className="pl-8"
-            placeholder="Search phone number..."
+            placeholder="Search name, company, phone…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -132,7 +132,9 @@ export function LeadsTable() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-white/5">
-                      <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wide">Phone</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wide">Contact</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wide">Company</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wide">Industry</th>
                       <th className="px-4 py-3 text-left">
                         <button
                           onClick={() => toggleSort("score")}
@@ -158,7 +160,7 @@ export function LeadsTable() {
                     {loading
                       ? Array.from({ length: 8 }).map((_, i) => (
                           <tr key={i}>
-                            {Array.from({ length: 6 }).map((_, j) => (
+                            {Array.from({ length: 8 }).map((_, j) => (
                               <td key={j} className="px-4 py-3">
                                 <Skeleton className="h-4 w-24" />
                               </td>
@@ -168,7 +170,7 @@ export function LeadsTable() {
                       : data?.leads.length === 0
                       ? (
                         <tr>
-                          <td colSpan={6} className="px-6 py-12 text-center text-sm text-zinc-500">
+                          <td colSpan={8} className="px-6 py-12 text-center text-sm text-zinc-500">
                             No leads found matching your filters.
                           </td>
                         </tr>
@@ -176,9 +178,22 @@ export function LeadsTable() {
                       : data?.leads.map((lead) => (
                           <tr key={lead.id} className="hover:bg-white/[0.02] transition-colors cursor-pointer">
                             <td className="px-6 py-3">
-                              <Link href={`/dashboard/leads/${lead.id}`} className="font-mono text-xs text-indigo-300 hover:text-indigo-200">
-                                {lead.phoneNumber}
+                              <Link href={`/dashboard/leads/${lead.id}`} className="block">
+                                {lead.name && (
+                                  <span className="block text-sm font-medium text-white hover:text-indigo-300 transition-colors">
+                                    {lead.name}
+                                  </span>
+                                )}
+                                <span className="font-mono text-xs text-zinc-500 hover:text-indigo-300 transition-colors">
+                                  {lead.phoneNumber}
+                                </span>
                               </Link>
+                            </td>
+                            <td className="px-4 py-3 text-sm text-zinc-300">
+                              {lead.company ?? <span className="text-zinc-600">—</span>}
+                            </td>
+                            <td className="px-4 py-3 text-xs text-zinc-400">
+                              {lead.industry ?? <span className="text-zinc-600">—</span>}
                             </td>
                             <td className="px-4 py-3">
                               {lead.latestScore !== null ? (

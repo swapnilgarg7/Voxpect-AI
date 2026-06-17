@@ -169,7 +169,15 @@ export async function getLeads(opts: {
   const skip = (page - 1) * pageSize;
 
   const where = {
-    ...(search ? { phoneNumber: { contains: search } } : {}),
+    ...(search
+      ? {
+          OR: [
+            { phoneNumber: { contains: search, mode: "insensitive" as const } },
+            { name: { contains: search, mode: "insensitive" as const } },
+            { company: { contains: search, mode: "insensitive" as const } },
+          ],
+        }
+      : {}),
     ...(status ? { latestStatus: status } : {}),
     ...(intent ? { latestIntent: intent } : {}),
   };
@@ -187,7 +195,10 @@ export async function getLeads(opts: {
       orderBy,
       select: {
         id: true,
+        name: true,
         phoneNumber: true,
+        company: true,
+        industry: true,
         latestScore: true,
         latestIntent: true,
         latestStatus: true,
@@ -204,7 +215,10 @@ export async function getLeads(opts: {
 
   const items: LeadListItem[] = leads.map((l) => ({
     id: l.id,
+    name: l.name,
     phoneNumber: l.phoneNumber,
+    company: l.company,
+    industry: l.industry,
     latestScore: l.latestScore,
     latestIntent: l.latestIntent,
     latestStatus: l.latestStatus,

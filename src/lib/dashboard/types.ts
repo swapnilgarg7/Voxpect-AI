@@ -42,7 +42,10 @@ export interface RecentLead {
 
 export interface LeadListItem {
   id: string;
+  name: string | null;
   phoneNumber: string;
+  company: string | null;
+  industry: string | null;
   latestScore: number | null;
   latestIntent: string | null;
   latestStatus: string | null;
