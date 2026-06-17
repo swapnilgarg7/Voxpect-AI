@@ -6,6 +6,41 @@ import Link from "next/link";
 import { Plus, Upload } from "lucide-react";
 import { LeadsTable } from "@/components/dashboard/leads-table";
 import { BulkUploadModal } from "@/components/dashboard/bulk-upload-modal";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Card, CardContent } from "@/components/ui/card";
+
+function LeadsTableSkeleton() {
+  return (
+    <Card>
+      <CardContent className="p-0">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-white/5">
+                {Array.from({ length: 8 }).map((_, i) => (
+                  <th key={i} className="px-4 py-3 text-left">
+                    <Skeleton className="h-3 w-16" />
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-white/5">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <tr key={i}>
+                  {Array.from({ length: 8 }).map((_, j) => (
+                    <td key={j} className="px-4 py-3">
+                      <Skeleton className="h-4 w-24" />
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
 
 export default function LeadsPage() {
   const [showBulkUpload, setShowBulkUpload] = useState(false);
@@ -36,7 +71,7 @@ export default function LeadsPage() {
         </div>
       </div>
 
-      <Suspense fallback={<div className="text-sm text-zinc-500">Loading...</div>}>
+      <Suspense fallback={<LeadsTableSkeleton />}>
         <LeadsTable key={tableKey} />
       </Suspense>
 
