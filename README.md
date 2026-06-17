@@ -1,4 +1,4 @@
-# Agentic Voice Intelligence Platform
+# Voxpect AI
 
 An AI-powered outbound SDR (Sales Development Representative) platform that autonomously places phone calls, transcribes conversations, and qualifies leads using GPT-4 — built for construction materials suppliers.
 
@@ -11,6 +11,7 @@ The platform closes the loop between outbound calling and CRM intelligence:
 3. **AI qualification** — GPT-4.1-mini analyzes the transcript for construction-specific buying signals: active projects, decision-maker status, quote requests, purchase timeline, current supplier, and more
 4. **Lead scoring** — A deterministic scoring model (0–100) classifies leads as Hot / Warm / Cold and recommends the next action (Send Quote, Schedule Sales Call, Add To Nurture Campaign)
 5. **Dashboard** — Real-time analytics with KPI cards, call volume charts, lead temperature distribution, conversion funnel, and per-lead drill-down
+6. **Bulk upload** — Import up to 500 leads at once from a CSV or Excel file; each imported lead is automatically queued for an outbound call
 
 ---
 
@@ -26,6 +27,7 @@ The platform closes the loop between outbound calling and CRM intelligence:
 | LLM | OpenAI GPT-4.1-mini |
 | UI | Tailwind CSS v4, Recharts, Lucide |
 | Validation | Zod v4 |
+| Excel parsing | SheetJS (xlsx) |
 
 ---
 
@@ -74,7 +76,7 @@ src/
 │   │   └── dashboard/           # REST endpoints for dashboard UI
 │   └── dashboard/               # Next.js pages (overview, leads, lead detail)
 ├── components/
-│   ├── dashboard/               # KPI cards, charts, leads table, audio player
+│   ├── dashboard/               # KPI cards, charts, leads table, bulk-upload modal, audio player
 │   └── ui/                      # Headless primitives (button, badge, card…)
 └── lib/
     ├── ai/leadQualification.ts  # GPT prompt, scoring, temperature logic
@@ -155,6 +157,31 @@ https://your-domain.com/api/vapi/webhook?token=YOUR_VAPI_WEBHOOK_SECRET
 
 ---
 
+## Leads table
+
+The leads table shows all captured lead data and is searchable by name, company, or phone number:
+
+| Column | Description |
+|---|---|
+| Contact | Lead name + phone number (E.164) |
+| Company | Company name if provided |
+| Industry | Industry if provided |
+| Score | AI lead score 0–100, color-coded by temperature |
+| Intent | High / Medium / Low intent extracted by GPT |
+| Status | Hot / Warm / Cold temperature classification |
+| Follow Up | Whether the AI flagged a required follow-up |
+| Last Activity | Date of most recent call analysis |
+
+### Bulk upload
+
+Click **Bulk Upload** on the Leads page to import a CSV or Excel file. Flexible headers are accepted (`phone`, `mobile`, `tel`, `company`, `organization`, etc.). The file is parsed client-side and a preview is shown before submitting. Each valid row is created as a lead and immediately queued for an outbound call. Duplicate phone numbers are skipped without aborting the rest of the import.
+
+**Required columns:** `name`, `phoneNumber` (E.164 format, e.g. `+14155552671`)  
+**Optional columns:** `company`, `industry`  
+**Limit:** 500 rows per upload
+
+---
+
 ## Lead scoring reference
 
 | Signal | Points |
@@ -185,3 +212,4 @@ https://your-domain.com/api/vapi/webhook?token=YOUR_VAPI_WEBHOOK_SECRET
 | `GET` | `/api/dashboard/leads` | Paginated lead list with filters |
 | `GET` | `/api/dashboard/leads/[id]` | Single lead with full call + analysis history |
 | `POST` | `/api/dashboard/leads/[id]/retry` | Re-enqueue a lead for an outbound call |
+| `POST` | `/api/dashboard/leads/bulk` | Bulk-create up to 500 leads and queue calls for each |
