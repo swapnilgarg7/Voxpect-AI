@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { BarChart3, Users, Phone, Plus } from "lucide-react";
+import { BarChart3, Users, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
@@ -50,10 +50,6 @@ export function Sidebar() {
           <Plus className="h-4 w-4" />
           New Lead
         </Link>
-        <div className="flex items-center gap-2 rounded-lg px-3 py-2">
-          <Phone className="h-4 w-4 text-zinc-500" />
-          <span className="text-xs text-zinc-500">Voxpect AI CRM</span>
-        </div>
       </div>
     </aside>
   );

@@ -179,14 +179,9 @@ export function LeadsTable() {
                           <tr key={lead.id} className="hover:bg-white/[0.02] transition-colors cursor-pointer">
                             <td className="px-6 py-3">
                               <Link href={`/dashboard/leads/${lead.id}`} className="block">
-                                {lead.name && (
-                                  <span className="block text-sm font-medium text-white hover:text-indigo-300 transition-colors">
-                                    {lead.name}
+                                <span className="block text-sm font-medium text-white hover:text-indigo-300 transition-colors">
+                                    {lead.name || lead.phoneNumber}
                                   </span>
-                                )}
-                                <span className="font-mono text-xs text-zinc-500 hover:text-indigo-300 transition-colors">
-                                  {lead.phoneNumber}
-                                </span>
                               </Link>
                             </td>
                             <td className="px-4 py-3 text-sm text-zinc-300">

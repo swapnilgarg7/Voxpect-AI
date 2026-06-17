@@ -23,8 +23,10 @@ const INDUSTRIES = [
   "Real Estate",
   "E-commerce",
   "Manufacturing",
+  "Construction",
   "Education",
   "Marketing",
+  "Consulting",
   "Other",
 ];
 
