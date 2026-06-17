@@ -1,11 +1,13 @@
 // Route handler: POST /api/vapi/webhook
 // Kept intentionally thin — all logic lives in the service layer.
 
+import { after } from "next/server";
 import { NextRequest, NextResponse } from "next/server";
 import {
   verifyWebhookToken,
   processVapiWebhook,
 } from "@/lib/services/vapi.service";
+import { runLeadQualification } from "@/lib/services/leadAnalysis.service";
 import type { VapiWebhookEvent } from "@/lib/types/vapi";
 
 export const dynamic = "force-dynamic";
@@ -45,6 +47,15 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       console.error(`[vapi/webhook] Processing failed: ${result.reason}`);
       // 422 = permanently bad payload, don't retry
       return NextResponse.json({ error: result.reason }, { status: 422 });
+    }
+
+    // Schedule AI qualification after response is sent — never blocks webhook ack
+    if (result.created && result.transcript) {
+      after(() =>
+        runLeadQualification(result.callId, result.leadId, result.transcript!).catch(
+          (err) => console.error("[vapi/webhook] Lead qualification failed:", err)
+        )
+      );
     }
 
     return NextResponse.json(

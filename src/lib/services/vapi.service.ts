@@ -118,7 +118,7 @@ export function normalisePayload(
 // ---------------------------------------------------------------------------
 
 export type ProcessResult =
-  | { ok: true; callId: string; leadId: string; created: boolean }
+  | { ok: true; callId: string; leadId: string; created: boolean; transcript: string | null }
   | { ok: false; reason: string };
 
 /**
@@ -140,7 +140,7 @@ export async function processVapiWebhook(
   const existing = await findCallByVapiId(data.vapiCallId);
   if (existing) {
     console.info(`[vapi] Duplicate webhook for call ${data.vapiCallId} — ignoring`);
-    return { ok: true, callId: existing.id, leadId: existing.leadId, created: false };
+    return { ok: true, callId: existing.id, leadId: existing.leadId, created: false, transcript: null };
   }
 
   const lead = await upsertLeadByPhone(data.phoneNumber);
@@ -150,5 +150,5 @@ export async function processVapiWebhook(
     `[vapi] Stored call ${call.id} (vapiCallId=${data.vapiCallId}) for lead ${lead.id}`
   );
 
-  return { ok: true, callId: call.id, leadId: lead.id, created: true };
+  return { ok: true, callId: call.id, leadId: lead.id, created: true, transcript: call.transcript ?? null };
 }

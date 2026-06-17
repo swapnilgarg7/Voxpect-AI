@@ -15,15 +15,41 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
+enum LeadStatus {
+  PENDING
+  CALLING
+  CALLED
+  FAILED
+  COMPLETED
+}
+
+enum QueueStatus {
+  PENDING
+  PROCESSING
+  SUCCESS
+  FAILED
+}
+
 // A Lead represents a unique prospect identified by phone number.
 // Phone number is the natural key because VAPI delivers calls keyed by caller/callee number.
 model Lead {
-  id          String   @id @default(cuid())
-  phoneNumber String   @unique
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id              String     @id @default(cuid())
+  phoneNumber     String     @unique
+  name            String?
+  company         String?
+  industry        String?
+  status          LeadStatus @default(PENDING)
+  lastCallAttempt DateTime?
+  callAttempts    Int        @default(0)
+  latestScore     Int?       // 0-100, updated after each AI analysis
+  latestIntent    String?    // "high" | "medium" | "low"
+  latestStatus    String?    // "hot" | "warm" | "cool" | "cold"
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
 
-  calls Call[]
+  calls    Call[]
+  analyses LeadAnalysis[]
+  queue    CallQueue[]
 
   @@map("leads")
 }
@@ -42,9 +68,59 @@ model Call {
   endedAt      DateTime?
   createdAt    DateTime  @default(now())
 
-  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  lead     Lead          @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  analysis LeadAnalysis?
 
   @@index([leadId])
   @@index([vapiCallId])
   @@map("calls")
+}
+
+// AI-generated qualification for each completed call with a transcript.
+model LeadAnalysis {
+  id                         String   @id @default(cuid())
+  callId                     String   @unique // one analysis per call
+  leadId                     String
+  interested                 Boolean
+  leadScore                  Int      // 0-100, computed from buying-intent signals
+  intentLevel                String   // "high" | "medium" | "low"
+  summary                    String
+  nextAction                 String
+  objections                 String[]
+  painPoints                 String[]
+  followupNeeded             Boolean
+  recommendedFollowupMessage String
+  // Construction-specific buying-intent signals
+  decisionMaker              Boolean?
+  activeProjects             Boolean?
+  projectStage               String?
+  materialsNeeded            String[] @default([])
+  purchaseTimelineDays       Int?
+  currentSupplier            String?
+  openToAlternatives         Boolean?
+  requestedQuote             Boolean?
+  followUpRequested          Boolean?
+  createdAt                  DateTime @default(now())
+
+  call Call @relation(fields: [callId], references: [id], onDelete: Cascade)
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([leadId])
+  @@map("lead_analyses")
+}
+
+// Database-backed queue for outbound call jobs.
+model CallQueue {
+  id          String      @id @default(cuid())
+  leadId      String
+  status      QueueStatus @default(PENDING)
+  attempts    Int         @default(0)
+  createdAt   DateTime    @default(now())
+  processedAt DateTime?
+
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([leadId])
+  @@index([status])
+  @@map("call_queue")
 }
