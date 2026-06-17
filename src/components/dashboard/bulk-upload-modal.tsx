@@ -68,17 +68,22 @@ function parseRows(raw: Record<string, unknown>[]): { rows: ParsedRow[]; errors:
       errors.push({ row: idx + 2, phoneNumber: rawPhone, name: "(missing)", reason: "Name is required" });
       return;
     }
-    if (!E164_RE.test(rawPhone)) {
+
+    // Normalize: strip whitespace/dashes/parens, then prepend + if missing
+    const digitsOnly = rawPhone.replace(/[\s\-().]/g, "");
+    const phone = digitsOnly.startsWith("+") ? digitsOnly : `+${digitsOnly}`;
+
+    if (!E164_RE.test(phone)) {
       errors.push({
         row: idx + 2,
         phoneNumber: rawPhone || "(missing)",
         name,
-        reason: "Phone must be E.164 format (e.g. +14155552671)",
+        reason: "Phone must include a country code (e.g. 919876543210 or +919876543210)",
       });
       return;
     }
 
-    rows.push({ name, phoneNumber: rawPhone, company, industry });
+    rows.push({ name, phoneNumber: phone, company, industry });
   });
 
   return { rows, errors };
@@ -269,7 +274,7 @@ export function BulkUploadModal({ onClose, onSuccess }: Props) {
                     <span key={col} className="rounded-md bg-zinc-800 px-2 py-0.5 font-mono text-xs text-zinc-300">{col}</span>
                   ))}
                 </div>
-                <p className="mt-2 text-xs text-zinc-600">Phone numbers must be in E.164 format (e.g. +14155552671). Flexible headers accepted (e.g. &quot;Phone Number&quot;, &quot;phone&quot;, &quot;mobile&quot;).</p>
+                <p className="mt-2 text-xs text-zinc-600">Include the country code — with or without the leading +. E.g. 919876543210 or +919876543210. Flexible headers accepted (e.g. &quot;Phone Number&quot;, &quot;phone&quot;, &quot;mobile&quot;).</p>
               </div>
             </>
           )}
