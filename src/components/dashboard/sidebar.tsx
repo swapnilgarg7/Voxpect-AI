@@ -15,7 +15,7 @@ export function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="fixed inset-y-0 left-0 z-40 flex w-56 flex-col border-r border-white/10 bg-zinc-950">
+    <aside className="hidden md:flex fixed inset-y-0 left-0 z-40 w-56 flex-col border-r border-white/10 bg-zinc-950">
       <div className="flex h-14 items-center gap-2 border-b border-white/10 px-4">
         <Image src="/logo.png" alt="Voxpect AI" width={28} height={28} className="rounded-lg" />
         <span className="text-sm font-semibold text-white">Voxpect AI</span>

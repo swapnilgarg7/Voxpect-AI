@@ -70,7 +70,7 @@ export function LeadTemperatureChart({ data }: { data: ScoreDistributionBucket[]
       <CardHeader>
         <CardTitle>Lead Temperature Distribution</CardTitle>
       </CardHeader>
-      <CardContent className="flex items-center gap-6">
+      <CardContent className="flex flex-wrap items-center gap-6">
         <ResponsiveContainer width={180} height={180}>
           <PieChart>
             <Pie

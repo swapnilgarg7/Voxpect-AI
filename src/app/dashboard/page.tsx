@@ -33,7 +33,7 @@ export default async function DashboardPage() {
     <div className="space-y-8">
       <div>
         <h1 className="text-2xl font-bold text-white">Overview</h1>
-        <p className="mt-1 text-sm text-zinc-500">Voxpect AI — SDR performance dashboard</p>
+        <p className="mt-1 text-sm text-zinc-500">SDR performance dashboard</p>
       </div>
 
       <KpiCards metrics={metrics} />
