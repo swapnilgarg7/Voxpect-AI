@@ -10,7 +10,7 @@ The platform closes the loop between outbound calling and CRM intelligence:
 2. **Webhook ingestion** — When the call ends, VAPI fires an `end-of-call-report` webhook that is verified, parsed, and persisted
 3. **AI qualification** — GPT-4.1-mini analyzes the transcript for construction-specific buying signals: active projects, decision-maker status, quote requests, purchase timeline, current supplier, and more
 4. **Lead scoring** — A deterministic scoring model (0–100) classifies leads as Hot / Warm / Cold and recommends the next action (Send Quote, Schedule Sales Call, Add To Nurture Campaign)
-5. **Dashboard** — Real-time analytics with KPI cards, call volume charts, lead temperature distribution, conversion funnel, and per-lead drill-down
+5. **Dashboard** — Real-time analytics with KPI cards, call volume charts, lead temperature distribution, conversion funnel, and per-lead drill-down; responsive layout with sidebar hidden on mobile and loading skeleton states throughout
 6. **Bulk upload** — Import up to 500 leads at once from a CSV or Excel file; each imported lead is automatically queued for an outbound call
 
 ---
@@ -75,8 +75,13 @@ src/
 │   │   ├── vapi/webhook/        # Inbound VAPI webhook
 │   │   └── dashboard/           # REST endpoints for dashboard UI
 │   └── dashboard/               # Next.js pages (overview, leads, lead detail)
+│       ├── loading.tsx           # Skeleton for dashboard overview
+│       └── leads/
+│           ├── loading.tsx       # Skeleton for leads list
+│           └── [id]/loading.tsx  # Skeleton for lead detail
 ├── components/
 │   ├── dashboard/               # KPI cards, charts, leads table, bulk-upload modal, audio player
+│   │   └── shell.tsx            # DashboardShell — sidebar + main content layout wrapper
 │   └── ui/                      # Headless primitives (button, badge, card…)
 └── lib/
     ├── ai/leadQualification.ts  # GPT prompt, scoring, temperature logic
@@ -88,7 +93,8 @@ src/
     │   └── callQueueWorker.ts   # DB-backed call queue processor
     └── dashboard/queries.ts     # Aggregation queries for dashboard metrics
 prisma/
-└── schema.prisma                # Lead, Call, LeadAnalysis, CallQueue models
+├── schema.prisma                # Lead, Call, LeadAnalysis, CallQueue models
+└── seed.ts                      # Sample data for local development
 ```
 
 ---
@@ -139,7 +145,15 @@ OPENAI_API_KEY="sk-..."
 npx prisma migrate deploy
 ```
 
-### 4. Start the dev server
+### 4. (Optional) Seed sample data
+
+```bash
+npx prisma db seed
+```
+
+Populates the database with sample leads, calls, and analyses for local development.
+
+### 5. Start the dev server
 
 ```bash
 npm run dev
@@ -163,7 +177,7 @@ The leads table shows all captured lead data and is searchable by name, company,
 
 | Column | Description |
 |---|---|
-| Contact | Lead name + phone number (E.164) |
+| Contact | Lead name (falls back to phone number if name is unavailable) |
 | Company | Company name if provided |
 | Industry | Industry if provided |
 | Score | AI lead score 0–100, color-coded by temperature |
