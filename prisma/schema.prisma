@@ -109,6 +109,18 @@ model LeadAnalysis {
   @@map("lead_analyses")
 }
 
+// Allowlist of users permitted to access the dashboard.
+// Add rows via: npx tsx scripts/add-user.ts <email> <password> [name]
+model AuthorizedUser {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String?
+  passwordHash String
+  createdAt    DateTime @default(now())
+
+  @@map("authorized_users")
+}
+
 // Database-backed queue for outbound call jobs.
 model CallQueue {
   id          String      @id @default(cuid())

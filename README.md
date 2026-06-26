@@ -25,6 +25,7 @@ The platform closes the loop between outbound calling and CRM intelligence:
 | ORM | Prisma 6 |
 | Voice AI | VAPI |
 | LLM | OpenAI GPT-4.1-mini |
+| Auth | Auth.js v5 (Credentials provider, bcrypt, JWT sessions) |
 | UI | Tailwind CSS v4, Recharts, Lucide |
 | Validation | Zod v4 |
 | Excel parsing | SheetJS (xlsx) |
@@ -63,6 +64,7 @@ CallQueue (DB) ──► callQueueWorker ──► VAPI REST API
 - **Idempotency** — Webhook handler checks for an existing `Call` by `vapiCallId` before writing; `runLeadQualification` checks for an existing `LeadAnalysis` by `callId` before calling OpenAI
 - **Supabase dual-URL pattern** — `DATABASE_URL` uses the transaction pooler (port 6543) for serverless runtime; `DIRECT_URL` uses the direct connection (port 5432) for `prisma migrate`
 - **Construction-specific scoring** — The lead score is computed deterministically from signals extracted by the LLM: decision-maker (+15), active projects (+25), purchase timeline ≤60 days (+25), open to alternatives (+10), requested quote (+15), follow-up requested (+10)
+- **Allowlist auth** — Dashboard access requires a row in `authorized_users`; `bcryptjs` hashes passwords at cost 12; Auth.js JWT sessions avoid a DB hit per request in the serverless runtime
 
 ---
 
@@ -72,16 +74,21 @@ CallQueue (DB) ──► callQueueWorker ──► VAPI REST API
 src/
 ├── app/
 │   ├── api/
+│   │   ├── auth/[...nextauth]/  # Auth.js route handler
 │   │   ├── vapi/webhook/        # Inbound VAPI webhook
 │   │   └── dashboard/           # REST endpoints for dashboard UI
+│   ├── sign-in/                 # Login page
 │   └── dashboard/               # Next.js pages (overview, leads, lead detail)
 │       ├── loading.tsx           # Skeleton for dashboard overview
 │       └── leads/
 │           ├── loading.tsx       # Skeleton for leads list
 │           └── [id]/loading.tsx  # Skeleton for lead detail
+├── auth.ts                      # Auth.js config (Credentials provider, bcrypt verify)
+├── middleware.ts                 # Protects all routes; redirects unauthenticated users to /sign-in
 ├── components/
 │   ├── dashboard/               # KPI cards, charts, leads table, bulk-upload modal, audio player
 │   │   └── shell.tsx            # DashboardShell — sidebar + main content layout wrapper
+│   ├── providers.tsx            # SessionProvider wrapper for Auth.js client hooks
 │   └── ui/                      # Headless primitives (button, badge, card…)
 └── lib/
     ├── ai/leadQualification.ts  # GPT prompt, scoring, temperature logic
@@ -93,8 +100,10 @@ src/
     │   └── callQueueWorker.ts   # DB-backed call queue processor
     └── dashboard/queries.ts     # Aggregation queries for dashboard metrics
 prisma/
-├── schema.prisma                # Lead, Call, LeadAnalysis, CallQueue models
+├── schema.prisma                # Lead, Call, LeadAnalysis, CallQueue, AuthorizedUser models
 └── seed.ts                      # Sample data for local development
+scripts/
+└── add-user.ts                  # CLI to create/update authorized dashboard users
 ```
 
 ---
@@ -107,6 +116,7 @@ prisma/
 - A Supabase project (PostgreSQL)
 - A VAPI account with an assistant and provisioned phone number
 - An OpenAI API key
+- `AUTH_SECRET` — a random secret for signing JWT sessions (`openssl rand -hex 32`)
 
 ### 1. Install dependencies
 
@@ -137,6 +147,9 @@ VAPI_PHONE_NUMBER_ID="..."
 
 # OpenAI
 OPENAI_API_KEY="sk-..."
+
+# Auth.js — JWT signing secret
+AUTH_SECRET="<openssl rand -hex 32>"
 ```
 
 ### 3. Run migrations
@@ -145,7 +158,17 @@ OPENAI_API_KEY="sk-..."
 npx prisma migrate deploy
 ```
 
-### 4. (Optional) Seed sample data
+### 4. Add the first authorized user
+
+The dashboard is protected by a login page. Access is restricted to rows in the `authorized_users` table — there is no self-registration. Add at least one user before trying to open the app:
+
+```bash
+npx tsx scripts/add-user.ts alice@example.com s3cur3pass "Alice Smith"
+```
+
+See [Managing authorized users](#managing-authorized-users) for the full reference.
+
+### 5. (Optional) Seed sample data
 
 ```bash
 npx prisma db seed
@@ -153,15 +176,15 @@ npx prisma db seed
 
 Populates the database with sample leads, calls, and analyses for local development.
 
-### 5. Start the dev server
+### 6. Start the dev server
 
 ```bash
 npm run dev
 ```
 
-Open [http://localhost:3000/dashboard](http://localhost:3000/dashboard).
+Open [http://localhost:3000](http://localhost:3000) — unauthenticated requests redirect to `/sign-in` automatically.
 
-### 5. Configure the VAPI webhook
+### 7. Configure the VAPI webhook
 
 In the VAPI dashboard, set the webhook URL for your assistant to:
 
@@ -193,6 +216,68 @@ Click **Bulk Upload** on the Leads page to import a CSV or Excel file. Flexible 
 **Required columns:** `name`, `phoneNumber` (E.164 format, e.g. `+14155552671`)  
 **Optional columns:** `company`, `industry`  
 **Limit:** 500 rows per upload
+
+---
+
+## Managing authorized users
+
+Access is controlled by an allowlist table (`authorized_users`). There is no self-registration or invite flow — users must be added by someone with database access.
+
+### Add a user
+
+```bash
+npx tsx scripts/add-user.ts <email> <password> [name]
+```
+
+```bash
+# Examples
+npx tsx scripts/add-user.ts alice@example.com s3cur3pass "Alice Smith"
+npx tsx scripts/add-user.ts bob@acme.com hunter2
+```
+
+Running the command again with the same email **updates** the password and name (upsert) — safe to re-run.
+
+### Change a user's password
+
+Re-run the add command with the new password:
+
+```bash
+npx tsx scripts/add-user.ts alice@example.com newpassword "Alice Smith"
+```
+
+### Remove a user
+
+Use Prisma Studio or run a raw query:
+
+```bash
+# Via Prisma Studio (GUI)
+npx prisma studio
+# Navigate to AuthorizedUser table → delete the row
+
+# Via psql / Supabase SQL editor
+DELETE FROM authorized_users WHERE email = 'alice@example.com';
+```
+
+### List current users
+
+```bash
+npx prisma studio
+# Or via SQL:
+# SELECT id, email, name, created_at FROM authorized_users;
+```
+
+---
+
+## Authentication
+
+All routes except `/api/auth/*` and `/api/vapi/webhook` are protected by `src/middleware.ts`. Unauthenticated requests are redirected to `/sign-in`. After a successful login, a JWT session cookie is issued (Auth.js v5, `strategy: "jwt"`).
+
+**Design decisions:**
+
+- **No database sessions** — JWT sessions avoid an extra DB round-trip on every request in a serverless environment
+- **Allowlist model** — only rows in `authorized_users` can log in; no public registration
+- **VAPI webhook bypass** — the middleware explicitly skips `/api/vapi/*` so the webhook can be called without a session cookie
+- **`AUTH_SECRET`** — must be set in production; Auth.js uses it to sign and verify session JWTs
 
 ---
 

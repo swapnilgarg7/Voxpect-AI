@@ -3,7 +3,8 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { BarChart3, Users, Plus } from "lucide-react";
+import { BarChart3, Users, Plus, LogOut } from "lucide-react";
+import { useSession, signOut } from "next-auth/react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
@@ -13,6 +14,7 @@ const navItems = [
 
 export function Sidebar() {
   const pathname = usePathname();
+  const { data: session } = useSession();
 
   return (
     <aside className="hidden md:flex fixed inset-y-0 left-0 z-40 w-56 flex-col border-r border-white/10 bg-zinc-950">
@@ -50,6 +52,41 @@ export function Sidebar() {
           <Plus className="h-4 w-4" />
           New Lead
         </Link>
+
+        {session?.user && (
+          <div className="mt-2 pt-2 border-t border-white/5">
+            <div className="flex items-center gap-2 px-3 py-2">
+              {session.user.image ? (
+                <Image
+                  src={session.user.image}
+                  alt={session.user.name ?? "User"}
+                  width={28}
+                  height={28}
+                  className="rounded-full shrink-0"
+                />
+              ) : (
+                <div className="h-7 w-7 rounded-full bg-indigo-600/40 flex items-center justify-center text-xs font-medium text-indigo-300 shrink-0">
+                  {(session.user.name ?? "U")[0].toUpperCase()}
+                </div>
+              )}
+              <div className="min-w-0">
+                <p className="text-xs font-medium text-white truncate">
+                  {session.user.name}
+                </p>
+                <p className="text-[10px] text-zinc-500 truncate">
+                  {session.user.email}
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => signOut({ callbackUrl: "/sign-in" })}
+              className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-zinc-500 hover:bg-white/5 hover:text-zinc-300 transition-colors"
+            >
+              <LogOut className="h-4 w-4" />
+              Sign out
+            </button>
+          </div>
+        )}
       </div>
     </aside>
   );
