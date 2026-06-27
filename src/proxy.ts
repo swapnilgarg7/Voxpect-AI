@@ -1,27 +1,10 @@
-import { auth } from "@/auth";
 import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 
-export const proxy = auth((req) => {
-  const { nextUrl } = req;
-  const isLoggedIn = !!req.auth;
-
-  const isApiAuth = nextUrl.pathname.startsWith("/api/auth");
-  const isApiVapi = nextUrl.pathname.startsWith("/api/vapi");
-  const isSignIn = nextUrl.pathname === "/sign-in";
-
-  if (isApiAuth || isApiVapi) return NextResponse.next();
-
-  if (isSignIn) {
-    if (isLoggedIn) return Response.redirect(new URL("/dashboard", nextUrl));
-    return NextResponse.next();
-  }
-
-  if (!isLoggedIn) {
-    return Response.redirect(new URL("/sign-in", nextUrl));
-  }
-
+// Auth temporarily disabled — restore by reverting to the auth() wrapper
+export function proxy(_req: NextRequest) {
   return NextResponse.next();
-});
+}
 
 export const config = {
   matcher: [
